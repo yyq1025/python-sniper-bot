@@ -1,11 +1,10 @@
-import json
-import websocket
+import sys
 from threading import Thread
+from blocknative.stream import Stream
 from web3 import Web3
-from helper import wrapper
-from helper.abis import ERC20_ABI, UNISWAP_ABI
-from helper.constants import WBNB
-from helper.blocknative_config import required_params, init, watch, filter_config
+import wrapper
+from constants.abis import ERC20_ABI, UNISWAP_ABI
+from constants.tokens import WBNB
 
 rpc_url = wrapper.get_rpc_url()
 
@@ -71,44 +70,44 @@ def buy(route: list, deadline: int, gas_price: int, idx: int):
     print(f"transaction {idx} sent")
 
 
-def on_open(ws):
-    ws.send(json.dumps({**required_params, **init}))
-    ws.send(json.dumps({**required_params, **filter_config}))
-    ws.send(json.dumps({**required_params, **watch}))
+blocknative_key = wrapper.get_blocknative_key()
+
+blocknative_filters = wrapper.get_blocknative_filter()
+
+stream = Stream(blocknative_key, network_id=w3.eth.chain_id)
 
 
-def on_message(ws, evt):
-    data = json.loads(evt)["event"]
+async def txn_handler(txn, unsubscribe):
+    route = [from_token, to_token]
+    if txn["contractCall"]["methodName"] != "addLiquidity":
+        route = [from_token, WBNB, to_token]
 
-    if "contractCall" in data:
-        route = [from_token, to_token]
-        if data["contractCall"]["methodName"] != "addLiquidity":
-            route = [from_token, WBNB, to_token]
-
-        threads = []
-        for i in range(buy_times):
-            threads.append(
-                Thread(
-                    target=buy,
-                    args=(
-                        route,
-                        int(data["contractCall"]["params"]["deadline"]),
-                        int(data["transaction"]["gasPrice"]),
-                        i,
-                    ),
-                )
+    threads = []
+    for i in range(buy_times):
+        threads.append(
+            Thread(
+                target=buy,
+                args=(
+                    route,
+                    int(txn["contractCall"]["params"]["deadline"]),
+                    int(txn["gasPrice"]),
+                    i,
+                ),
             )
+        )
 
-        for task in threads:
-            task.start()
+    for task in threads:
+        task.start()
 
-        for task in threads:
-            task.join()
+    for task in threads:
+        task.join()
 
-        ws.close()
+    unsubscribe()
+    sys.exit(0)
 
 
-wsapp = websocket.WebSocketApp(
-    "wss://api.blocknative.com/v0", on_open=on_open, on_message=on_message
+stream.subscribe_address(
+    router, txn_handler, filters=blocknative_filters, abi=UNISWAP_ABI
 )
-wsapp.run_forever()
+
+stream.connect()

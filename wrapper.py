@@ -1,6 +1,7 @@
 import sys
 from web3 import Web3
 import config
+from constants import routers
 
 
 def get_blocknative_key() -> str:
@@ -15,14 +16,11 @@ def get_rpc_url() -> str:
 
 
 def get_router() -> str:
-    if not Web3.isAddress(config.ROUTER):
-        print("invalid router address")
-        sys.exit(1)
-    return config.ROUTER
+    return config.ROUTER or routers.PANCAKESWAP
 
 
 def get_buy_times() -> int:
-    return config.BUY_TIMES or 5
+    return config.BUY_TIMES or 1
 
 
 def get_gas_limit() -> int:
@@ -70,3 +68,36 @@ def get_to_token() -> str:
 
 def get_to_token_amount_min() -> int:
     return config.TO_TOKEN_AMOUNT_MIN or 0
+
+
+def get_blocknative_filter() -> list[dict]:
+    if not Web3.isAddress(config.TO_TOKEN):
+        print("invalid to token address")
+        sys.exit(1)
+    return [
+        {
+            "_join": "OR",
+            "terms": [
+                {
+                    "contractCall.methodName": "addLiquidity",
+                    "contractCall.params.tokenA": config.TO_TOKEN,
+                    "status": "pending",
+                },
+                {
+                    "contractCall.methodName": "addLiquidity",
+                    "contractCall.params.tokenB": config.TO_TOKEN,
+                    "status": "pending",
+                },
+                {
+                    "contractCall.methodName": "addLiquidityETH",
+                    "contractCall.params.token": config.TO_TOKEN,
+                    "status": "pending",
+                },
+                {
+                    "contractCall.methodName": "addLiquidityBNB",
+                    "contractCall.params.token": config.TO_TOKEN,
+                    "status": "pending",
+                },
+            ],
+        }
+    ]
