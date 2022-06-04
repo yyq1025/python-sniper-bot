@@ -46,7 +46,7 @@ def get_to_address() -> str:
 
 
 def get_from_token() -> str:
-    if not Web3.isAddress(config.FROM_TOKEN):
+    if config.FROM_TOKEN and not Web3.isAddress(config.FROM_TOKEN):
         print("invalid from token address")
         sys.exit(1)
     return config.FROM_TOKEN
@@ -90,11 +90,6 @@ def get_blocknative_filter() -> list[dict]:
                 },
                 {
                     "contractCall.methodName": "addLiquidityETH",
-                    "contractCall.params.token": config.TO_TOKEN,
-                    "status": "pending",
-                },
-                {
-                    "contractCall.methodName": "addLiquidityBNB",
                     "contractCall.params.token": config.TO_TOKEN,
                     "status": "pending",
                 },

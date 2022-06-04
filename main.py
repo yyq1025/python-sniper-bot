@@ -35,7 +35,9 @@ from_account = w3.eth.account.from_key(private_key)
 nonce = w3.eth.get_transaction_count(from_account.address)
 
 from_token_decimals = (
-    w3.eth.contract(address=from_token, abi=ERC20_ABI).functions.decimals().call()
+    (w3.eth.contract(address=from_token, abi=ERC20_ABI).functions.decimals().call())
+    if from_token
+    else None
 )
 
 to_token_decimals = (
@@ -48,20 +50,36 @@ print("bot prepared")
 
 
 def buy(route: list, deadline: int, gas_price: int, idx: int):
-    tx = contract.functions.swapExactTokensForTokens(
-        int(from_token_amount * 10**from_token_decimals),
-        int(to_token_amount_min * 10**to_token_decimals),
-        route,
-        to_address or from_account.address,
-        deadline,
-    ).buildTransaction(
-        {
-            "from": from_account.address,
-            "gas": gas_limit,
-            "gasPrice": int(gas_price_multiplier * gas_price),
-            "nonce": nonce + idx,
-        }
-    )
+    if from_token:
+        tx = contract.functions.swapExactTokensForTokens(
+            int(from_token_amount * 10**from_token_decimals),
+            int(to_token_amount_min * 10**to_token_decimals),
+            route,
+            to_address or from_account.address,
+            deadline,
+        ).buildTransaction(
+            {
+                "from": from_account.address,
+                "gas": gas_limit,
+                "gasPrice": int(gas_price_multiplier * gas_price),
+                "nonce": nonce + idx,
+            }
+        )
+    else:
+        tx = contract.functions.swapExactETHForTokens(
+            int(to_token_amount_min * 10**to_token_decimals),
+            route,
+            to_address or from_account.address,
+            deadline,
+        ).buildTransaction(
+            {
+                "from": from_account.address,
+                "value": w3.toWei(from_token_amount, "ether"),
+                "gas": gas_limit,
+                "gasPrice": int(gas_price_multiplier * gas_price),
+                "nonce": nonce + idx,
+            }
+        )
 
     signed_tx = from_account.sign_transaction(tx)
 
@@ -78,9 +96,18 @@ stream = Stream(blocknative_key, network_id=w3.eth.chain_id)
 
 
 async def txn_handler(txn, unsubscribe):
-    route = [from_token, to_token]
     if txn["contractCall"]["methodName"] != "addLiquidity":
-        route = [from_token, WBNB, to_token]
+        route = [WBNB, to_token]
+    else:
+        route = [
+            txn["contractCall"]["params"]["tokenA"],
+            txn["contractCall"]["params"]["tokenB"],
+        ]
+        route.remove(to_token)
+        route.append(to_token)
+
+    if (from_token or WBNB) != route[0]:
+        route.insert(0, from_token or WBNB)
 
     threads = []
     for i in range(buy_times):

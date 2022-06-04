@@ -22,7 +22,7 @@ PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 
 # TO_ADDRESS = ""
 
-FROM_TOKEN = tokens.BUSD
+# FROM_TOKEN = tokens.BUSD
 
 FROM_TOKEN_AMOUNT = 0.001
 
