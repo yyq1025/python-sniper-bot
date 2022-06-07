@@ -32,6 +32,8 @@ w3 = Web3(Web3.HTTPProvider(rpc_url))
 
 from_account = w3.eth.account.from_key(private_key)
 
+w3.eth.default_account = from_account.address
+
 nonce = w3.eth.get_transaction_count(from_account.address)
 
 from_token_decimals = (
@@ -59,7 +61,6 @@ def buy(route: list, deadline: int, gas_price: int, idx: int):
             deadline,
         ).buildTransaction(
             {
-                "from": from_account.address,
                 "gas": gas_limit,
                 "gasPrice": int(gas_price_multiplier * gas_price),
                 "nonce": nonce + idx,
@@ -73,7 +74,6 @@ def buy(route: list, deadline: int, gas_price: int, idx: int):
             deadline,
         ).buildTransaction(
             {
-                "from": from_account.address,
                 "value": w3.toWei(from_token_amount, "ether"),
                 "gas": gas_limit,
                 "gasPrice": int(gas_price_multiplier * gas_price),
