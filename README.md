@@ -28,7 +28,23 @@ Fantom | [SpookySwap](https://spooky.fi/) | ⚠️ |
    ```
    TO_TOKEN = "0x55d398326f99059fF775485246999027B3197955"
    ```
-7. In terminal, enter following commands
+7. In terminal, enter following commands to create and enter virtual envrionment
+   ```
+   python3 -m venv env
+   ```
+   Linux or macOS
+   ```
+   source env/bin/activate
+   ```
+   Windows
+   ```
+   env\Scripts\activate.bat
+   ```
+8. Install dependencies in virtual environment
+   ```
+   pip install -r requirements.txt
+   ```
+9. Set environment varibale in virtual environment
    
    Linux or macOS
    ```
@@ -40,8 +56,8 @@ Fantom | [SpookySwap](https://spooky.fi/) | ⚠️ |
    set BLOCKNATIVE_KEY=<your Blocknative API key>
    set PRIVATE_KEY=<your wallet private key>
    ```
-8. In terminal, enter the following command
-   ```
-   python3 main.py
-   ```
-9. Now, when someone add liquidity with USDT on BSC, you will spend 0.001 BNB to buy USDT with path \[BNB, USDT paired token, USDT\]
+10. In terminal, enter the following command
+    ```
+    python3 main.py
+    ```
+11. Now, when someone add liquidity with USDT on BSC, you will spend 0.001 BNB to buy USDT with path \[BNB, USDT paired token, USDT\]
